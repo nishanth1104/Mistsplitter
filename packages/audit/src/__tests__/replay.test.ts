@@ -54,7 +54,7 @@ describe('replayCase()', () => {
     ;(db.auditLog.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
 
     await replayCase('case_SPECIFIC')
-    const call = (db.auditLog.findMany as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    const call = (db.auditLog.findMany as ReturnType<typeof vi.fn>).mock.calls[0]![0]
     expect(call.where.caseId).toBe('case_SPECIFIC')
     expect(call.orderBy.createdAt).toBe('asc')
   })
@@ -109,7 +109,7 @@ describe('getRecentEvents()', () => {
     ;(db.auditLog.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
 
     await getRecentEvents()
-    const call = (db.auditLog.findMany as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    const call = (db.auditLog.findMany as ReturnType<typeof vi.fn>).mock.calls[0]![0]
     expect(call.take).toBe(100)
     expect(call.orderBy.createdAt).toBe('desc')
   })
@@ -119,7 +119,7 @@ describe('getRecentEvents()', () => {
     ;(db.auditLog.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
 
     await getRecentEvents({ limit: 9999 })
-    const call = (db.auditLog.findMany as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    const call = (db.auditLog.findMany as ReturnType<typeof vi.fn>).mock.calls[0]![0]
     expect(call.take).toBe(500)
   })
 })

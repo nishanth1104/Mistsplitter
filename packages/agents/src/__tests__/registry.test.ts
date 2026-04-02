@@ -148,7 +148,7 @@ describe('AgentRegistry', () => {
         'revoke_agent',
       )
       expect(writeAuditEvent).toHaveBeenCalledOnce()
-      const call = (writeAuditEvent as ReturnType<typeof vi.fn>).mock.calls[0][0]
+      const call = (writeAuditEvent as ReturnType<typeof vi.fn>).mock.calls[0]![0]
       expect(call.action).toBe('tool.rejected')
     })
   })

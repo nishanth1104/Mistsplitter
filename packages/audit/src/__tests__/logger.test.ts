@@ -72,7 +72,7 @@ describe('writeAuditEvent()', () => {
 
     await writeAuditEvent(validEvent)
 
-    const call = (db.auditLog.create as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    const call = (db.auditLog.create as ReturnType<typeof vi.fn>).mock.calls[0]![0]
     expect(call.data.actorType).toBe('agent')
     expect(call.data.actorRole).toBe('workflow-agent')
     expect(call.data.action).toBe('case.created')
@@ -97,7 +97,7 @@ describe('writeAuditEvent()', () => {
       correlationId: 'corr_TESTCORR',
     })
 
-    const call = (db.auditLog.create as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    const call = (db.auditLog.create as ReturnType<typeof vi.fn>).mock.calls[0]![0]
     expect(call.data.payloadJson).toMatchObject({ correlationId: 'corr_TESTCORR' })
   })
 
@@ -120,7 +120,7 @@ describe('writeAuditEvent()', () => {
     })
     expect(result.ok).toBe(true)
 
-    const call = (db.auditLog.create as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    const call = (db.auditLog.create as ReturnType<typeof vi.fn>).mock.calls[0]![0]
     expect(call.data.caseId).toBeNull()
   })
 
