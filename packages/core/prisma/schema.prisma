@@ -1,0 +1,377 @@
+// Mistsplitter — PostgreSQL schema via Prisma ORM
+// Security rule: NEVER assemble raw SQL from user or LLM input. ORM only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum CustomerType {
+  individual
+  business
+}
+
+enum RiskTier {
+  low
+  medium
+  high
+  pep
+}
+
+enum AccountStatus {
+  active
+  suspended
+  closed
+}
+
+enum MerchantRiskTag {
+  standard
+  elevated
+  restricted
+}
+
+enum TransactionChannel {
+  card
+  wire
+  ach
+  cash
+  crypto
+}
+
+enum TransactionStatus {
+  completed
+  pending
+  reversed
+  flagged
+}
+
+enum AlertType {
+  amount_threshold
+  velocity
+  pattern
+  merchant_risk
+  rule_hit
+}
+
+enum AlertSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum CaseStatus {
+  pending
+  in_review
+  escalated
+  closed_clear
+  closed_actioned
+}
+
+enum CasePriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum EvidenceType {
+  customer_profile
+  account_context
+  transaction_history
+  merchant_context
+  prior_alerts
+  signal_summary
+}
+
+enum RecommendedAction {
+  clear
+  review_further
+  escalate
+}
+
+enum ConfidenceLevel {
+  low
+  medium
+  high
+}
+
+enum ReviewAction {
+  approved
+  overridden
+  escalated
+  requested_context
+}
+
+enum AgentStatus {
+  active
+  suspended
+  revoked
+}
+
+enum AgentRiskLevel {
+  low
+  medium
+  high
+}
+
+enum PolicyDecision {
+  permitted
+  blocked
+  requires_approval
+}
+
+enum ActorType {
+  agent
+  reviewer
+  system
+  cli
+  api
+}
+
+enum ActorRole {
+  analyst
+  reviewer
+  manager
+  admin
+  platform_engineer
+  workflow_agent
+}
+
+enum WorkflowStatus {
+  running
+  completed
+  failed
+  replaying
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+model Customer {
+  customerId   String       @id @map("customer_id")
+  customerType CustomerType @map("customer_type")
+  name         String
+  country      String       // ISO 3166
+  riskTier     RiskTier     @map("risk_tier")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  accounts Account[]
+
+  @@map("customers")
+}
+
+model Account {
+  accountId  String        @id @map("account_id")
+  customerId String        @map("customer_id")
+  status     AccountStatus
+  openedAt   DateTime      @map("opened_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  customer     Customer      @relation(fields: [customerId], references: [customerId])
+  transactions Transaction[]
+
+  @@index([customerId])
+  @@map("accounts")
+}
+
+model Merchant {
+  merchantId String          @id @map("merchant_id")
+  name       String
+  category   String          // MCC code
+  country    String
+  riskTag    MerchantRiskTag @map("risk_tag")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  transactions Transaction[]
+
+  @@map("merchants")
+}
+
+model Transaction {
+  transactionId String             @id @map("transaction_id")
+  accountId     String             @map("account_id")
+  merchantId    String?            @map("merchant_id")
+  amount        Decimal            @db.Decimal(18, 4)
+  currency      String             // ISO 4217
+  channel       TransactionChannel
+  timestamp     DateTime
+  status        TransactionStatus
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  account  Account   @relation(fields: [accountId], references: [accountId])
+  merchant Merchant? @relation(fields: [merchantId], references: [merchantId])
+  alerts   Alert[]
+
+  @@index([accountId, timestamp])
+  @@map("transactions")
+}
+
+model Alert {
+  alertId       String        @id @map("alert_id")
+  transactionId String        @map("transaction_id")
+  alertType     AlertType     @map("alert_type")
+  severity      AlertSeverity
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  transaction Transaction @relation(fields: [transactionId], references: [transactionId])
+  cases       Case[]
+
+  @@map("alerts")
+}
+
+model Case {
+  caseId        String       @id @map("case_id")
+  alertId       String       @map("alert_id")
+  status        CaseStatus   @default(pending)
+  priority      CasePriority
+  assignedTo    String?      @map("assigned_to")
+  correlationId String       @map("correlation_id")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  alert           Alert            @relation(fields: [alertId], references: [alertId])
+  riskSignals     RiskSignal[]
+  caseEvidence    CaseEvidence[]
+  recommendations Recommendation[]
+  reviews         Review[]
+  policyEvents    PolicyEvent[]
+  auditLogs       AuditLog[]
+  workflowRuns    WorkflowRun[]
+
+  @@index([status, priority])
+  @@map("cases")
+}
+
+model RiskSignal {
+  signalId     String   @id @map("signal_id")
+  caseId       String   @map("case_id")
+  signalName   String   @map("signal_name")
+  signalValue  Decimal  @map("signal_value") @db.Decimal(18, 4)
+  signalReason String   @map("signal_reason")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  case Case @relation(fields: [caseId], references: [caseId])
+
+  @@index([caseId])
+  @@map("risk_signals")
+}
+
+model CaseEvidence {
+  evidenceId   String       @id @map("evidence_id")
+  caseId       String       @map("case_id")
+  evidenceType EvidenceType @map("evidence_type")
+  payloadJson  Json         @map("payload_json")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  case Case @relation(fields: [caseId], references: [caseId])
+
+  @@map("case_evidence")
+}
+
+model Recommendation {
+  recommendationId   String            @id @map("recommendation_id")
+  caseId             String            @map("case_id")
+  recommendedAction  RecommendedAction @map("recommended_action")
+  summary            String            @db.VarChar(500)
+  confidence         ConfidenceLevel
+  evidenceReferences String[]          @map("evidence_references")
+  createdAt          DateTime          @default(now()) @map("created_at")
+
+  case Case @relation(fields: [caseId], references: [caseId])
+
+  @@map("recommendations")
+}
+
+model Review {
+  reviewId    String       @id @map("review_id")
+  caseId      String       @map("case_id")
+  reviewerId  String       @map("reviewer_id")
+  finalAction ReviewAction @map("final_action")
+  overrideFlag Boolean     @default(false) @map("override_flag")
+  reasonCode  String?      @map("reason_code") @db.VarChar(100)
+  notes       String?      @db.Text
+  reviewedAt  DateTime     @default(now()) @map("reviewed_at")
+
+  case Case @relation(fields: [caseId], references: [caseId])
+
+  @@map("reviews")
+}
+
+model AgentRegistry {
+  agentId        String         @id @map("agent_id")
+  name           String         @unique
+  owner          String
+  role           String
+  status         AgentStatus    @default(active)
+  approvedTools  String[]       @map("approved_tools")
+  allowedActions String[]       @map("allowed_actions")
+  riskLevel      AgentRiskLevel @map("risk_level")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  policyEvents PolicyEvent[]
+
+  @@map("agent_registry")
+}
+
+model PolicyEvent {
+  policyEventId String         @id @map("policy_event_id")
+  caseId        String         @map("case_id")
+  agentId       String         @map("agent_id")
+  decision      PolicyDecision
+  rationale     String
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  case  Case          @relation(fields: [caseId], references: [caseId])
+  agent AgentRegistry @relation(fields: [agentId], references: [agentId])
+
+  @@index([caseId])
+  @@map("policy_events")
+}
+
+// Append-only — never update or delete rows in this table
+model AuditLog {
+  logId       String    @id @map("log_id")
+  caseId      String?   @map("case_id")
+  actorType   ActorType @map("actor_type")
+  actorId     String    @map("actor_id")
+  actorRole   ActorRole @map("actor_role")
+  action      String    @db.VarChar(100)
+  payloadJson Json      @map("payload_json")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  case Case? @relation(fields: [caseId], references: [caseId])
+
+  @@index([caseId, createdAt])
+  @@map("audit_logs")
+}
+
+model WorkflowRun {
+  runId        String        @id @map("run_id")
+  caseId       String        @map("case_id")
+  workflowName String        @map("workflow_name")
+  state        String        // RiskReviewState as string for flexibility
+  startedAt    DateTime      @default(now()) @map("started_at")
+  endedAt      DateTime?     @map("ended_at")
+  status       WorkflowStatus
+
+  case Case @relation(fields: [caseId], references: [caseId])
+
+  @@index([caseId, status])
+  @@map("workflow_runs")
+}
+
+model MetricsSnapshot {
+  snapshotId  String   @id @map("snapshot_id")
+  metricName  String   @map("metric_name")
+  metricValue Decimal  @map("metric_value") @db.Decimal(18, 4)
+  recordedAt  DateTime @default(now()) @map("recorded_at")
+
+  @@index([metricName, recordedAt])
+  @@map("metrics_snapshots")
+}

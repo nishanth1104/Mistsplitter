@@ -1,0 +1,37 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.production
+
+# Prisma generated
+packages/core/prisma/generated/
+packages/core/src/generated/
+
+# Next.js
+web/.next/
+web/out/
+
+# Build artifacts
+*.js.map
+*.d.ts.map
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# pnpm
+.pnpm-debug.log*

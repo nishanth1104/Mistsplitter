@@ -1,0 +1,21 @@
+{
+  "alertId": "alert_01HXYZ9K2P3Q4R5S6T7U8V9W0A",
+  "transactionId": "txn_01HXYZ9K2P3Q4R5S6T7U8V9W0B",
+  "alertType": "amount_threshold",
+  "severity": "high",
+  "transaction": {
+    "transactionId": "txn_01HXYZ9K2P3Q4R5S6T7U8V9W0B",
+    "accountId": "account_01HXYZ9K2P3Q4R5S6T7U8V9W0C",
+    "merchantId": "merchant_01HXYZ9K2P3Q4R5S6T7U8V9W0D",
+    "amount": "47500.00",
+    "currency": "USD",
+    "channel": "wire",
+    "timestamp": "2026-04-02T14:23:45.000Z",
+    "status": "completed"
+  },
+  "metadata": {
+    "source": "core-banking",
+    "ruleId": "AMOUNT_THRESHOLD_10K",
+    "thresholdExceeded": 47500
+  }
+}

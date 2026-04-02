@@ -1,0 +1,35 @@
+{
+  "name": "mistsplitter",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --recursive --parallel --filter './packages/*' --filter web dev",
+    "build": "pnpm --recursive build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm --recursive typecheck",
+    "lint": "eslint packages web --ext .ts,.tsx --max-warnings 0",
+    "db:migrate": "pnpm --filter @mistsplitter/core exec prisma migrate dev",
+    "db:generate": "pnpm --filter @mistsplitter/core exec prisma generate",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:studio": "pnpm --filter @mistsplitter/core exec prisma studio",
+    "db:reset": "pnpm --filter @mistsplitter/core exec prisma migrate reset --force",
+    "cli": "pnpm --filter @mistsplitter/cli exec tsx src/index.ts",
+    "serve:api": "pnpm --filter @mistsplitter/api dev",
+    "serve:mcp": "pnpm --filter @mistsplitter/mcp dev",
+    "serve:all": "pnpm --parallel serve:api serve:mcp",
+    "demo": "tsx scripts/demo.ts"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
