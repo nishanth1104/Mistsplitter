@@ -1,9 +1,9 @@
 import pino from 'pino'
 
-// Secret field names that must never appear in logs
+// Secret field names that must never appear in logs (all lowercase — checked case-insensitively)
 const SECRET_FIELDS = new Set([
   'password',
-  'apiKey',
+  'apikey',
   'api_key',
   'token',
   'secret',
@@ -45,7 +45,7 @@ const baseLogger = pino({
       return { level: label }
     },
     log(obj) {
-      return redactSecrets(obj) as object
+      return redactSecrets(obj) as Record<string, unknown>
     },
   },
   base: {

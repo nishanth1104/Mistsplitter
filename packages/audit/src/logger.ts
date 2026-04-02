@@ -35,7 +35,8 @@ export async function writeAuditEvent(
         actorId: event.actorId,
         actorRole: event.actorRole,
         action: event.action,
-        payloadJson: payload,
+        // JSON round-trip ensures only serializable values reach the DB
+        payloadJson: JSON.parse(JSON.stringify(payload)) as object,
       },
     })
 
@@ -46,7 +47,7 @@ export async function writeAuditEvent(
       actorId: record.actorId,
       actorRole: record.actorRole as AuditLog['actorRole'],
       action: record.action,
-      payloadJson: record.payloadJson,
+      payloadJson: record.payloadJson as Record<string, unknown>,
       createdAt: record.createdAt,
     })
   } catch (cause) {

@@ -22,7 +22,7 @@ export async function replayCase(
       actorId: r.actorId,
       actorRole: r.actorRole as AuditLog['actorRole'],
       action: r.action,
-      payloadJson: r.payloadJson,
+      payloadJson: r.payloadJson as Record<string, unknown>,
       createdAt: r.createdAt,
     }))
 
@@ -62,7 +62,7 @@ export async function getRecentEvents(
       actorId: r.actorId,
       actorRole: r.actorRole as AuditLog['actorRole'],
       action: r.action,
-      payloadJson: r.payloadJson,
+      payloadJson: r.payloadJson as Record<string, unknown>,
       createdAt: r.createdAt,
     }))
 

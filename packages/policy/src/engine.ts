@@ -78,7 +78,7 @@ export async function evaluatePolicy(
       rationale: decision.rationale,
       workflowName: context.workflowName,
     },
-    correlationId: context.correlationId,
+    ...(context.correlationId ? { correlationId: context.correlationId } : {}),
   })
 
   logger.info(

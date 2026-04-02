@@ -127,23 +127,6 @@ enum PolicyDecision {
   requires_approval
 }
 
-enum ActorType {
-  agent
-  reviewer
-  system
-  cli
-  api
-}
-
-enum ActorRole {
-  analyst
-  reviewer
-  manager
-  admin
-  platform_engineer
-  workflow_agent
-}
-
 enum WorkflowStatus {
   running
   completed
@@ -336,14 +319,14 @@ model PolicyEvent {
 
 // Append-only — never update or delete rows in this table
 model AuditLog {
-  logId       String    @id @map("log_id")
-  caseId      String?   @map("case_id")
-  actorType   ActorType @map("actor_type")
-  actorId     String    @map("actor_id")
-  actorRole   ActorRole @map("actor_role")
-  action      String    @db.VarChar(100)
-  payloadJson Json      @map("payload_json")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  logId       String   @id @map("log_id")
+  caseId      String?  @map("case_id")
+  actorType   String   @map("actor_type")   // ActorType enum validated at app layer
+  actorId     String   @map("actor_id")
+  actorRole   String   @map("actor_role")   // ActorRole enum validated at app layer
+  action      String   @db.VarChar(100)
+  payloadJson Json     @map("payload_json")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   case Case? @relation(fields: [caseId], references: [caseId])
 

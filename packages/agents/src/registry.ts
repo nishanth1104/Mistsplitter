@@ -99,7 +99,7 @@ export class AgentRegistry {
     if (agent.approvedTools.length > 0 && !agent.approvedTools.includes(toolName)) {
       // Write rejection audit event
       await writeAuditEvent({
-        caseId,
+        caseId: caseId ?? null,
         actorType: 'agent',
         actorId: actor.agentId,
         actorRole: 'workflow-agent',
