@@ -3,6 +3,7 @@ import { readFileSync } from 'fs'
 import { z } from 'zod'
 import { db, ids } from '@mistsplitter/core'
 import { writeAuditEvent, AuditActions } from '@mistsplitter/audit'
+import { startWorkflowRun, executeWorkflow, RISK_REVIEW_STEPS, buildExecutors } from '@mistsplitter/workflow'
 import { print, success, error, warn, printJson, printTable, createSpinner, isJsonMode } from '../output.js'
 import chalk from 'chalk'
 
@@ -208,25 +209,61 @@ export function registerCaseCommands(program: Command): void {
   // case run <case_id>
   caseCmd
     .command('run <case_id>')
-    .description('Execute workflow for a case (Phase 4)')
+    .description('Execute the risk_review workflow for a case')
     .action(async (caseId: string) => {
+      const spinner = createSpinner('Starting workflow...')
+      spinner.start()
       try {
-        // Stub: create workflow_run record to show intent
-        const runId = ids.workflowRun()
-        await db.workflowRun.create({
-          data: {
-            runId,
-            caseId,
-            workflowName: 'risk_review',
-            state: 'pending',
-            status: 'running',
-            startedAt: new Date(),
-          },
-        })
-        warn('Workflow execution requires Phase 4 agents.')
-        print(`Workflow run created: ${runId}`)
-        print('Run `pnpm cli -- case run <case_id>` again after Phase 4 is complete.')
+        // Verify case exists
+        const caseRecord = await db.case.findUnique({ where: { caseId } })
+        if (!caseRecord) {
+          spinner.fail('Case not found')
+          error(`No case found with ID: ${caseId}`)
+          process.exit(1)
+        }
+
+        const correlationId = caseRecord.correlationId ?? ids.correlationId()
+
+        // Start the workflow run
+        const runResult = await startWorkflowRun(caseId, correlationId)
+        if (!runResult.ok) {
+          spinner.fail('Failed to start workflow')
+          error(runResult.error.message)
+          process.exit(1)
+        }
+
+        const run = runResult.value
+        spinner.text = `Running agents... (run: ${run.runId})`
+
+        // Execute all pipeline steps
+        const executors = buildExecutors(caseId, run.runId)
+        const result = await executeWorkflow(run, RISK_REVIEW_STEPS, executors, correlationId)
+
+        if (result.ok) {
+          const finalState = result.value.state
+          if (finalState === 'awaiting_review') {
+            spinner.succeed('Workflow complete — awaiting human review')
+            success(`Run ID: ${run.runId}`)
+            print(`  Final state: ${chalk.yellow(finalState)}`)
+            print('  Use `case recommendation <case_id>` to see the recommendation')
+            print('  Use `review approve|override|escalate <case_id>` to submit a review')
+          } else {
+            spinner.succeed(`Workflow complete`)
+            success(`Run ID: ${run.runId}`)
+            print(`  Final state: ${chalk.green(finalState)}`)
+          }
+
+          if (isJsonMode(program)) {
+            printJson({ runId: run.runId, caseId, finalState, status: result.value.status })
+          }
+        } else {
+          spinner.fail('Workflow failed')
+          error(`Error: ${result.error.message}`)
+          error(`Code: ${result.error.code}`)
+          process.exit(1)
+        }
       } catch (err_) {
+        spinner.fail('Workflow execution error')
         error(err_ instanceof Error ? err_.message : String(err_))
         process.exit(1)
       }

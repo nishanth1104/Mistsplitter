@@ -16,5 +16,7 @@ export default defineConfig({
     '@mistsplitter/core',
     '@mistsplitter/audit',
     '@mistsplitter/policy',
+    '@mistsplitter/workflow',
+    '@mistsplitter/agents',
   ],
 })

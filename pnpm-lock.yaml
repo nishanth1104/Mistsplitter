@@ -32,12 +32,21 @@ importers:
 
   packages/agents:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.27.0
+        version: 0.27.3
       '@mistsplitter/audit':
         specifier: workspace:*
         version: link:../audit
       '@mistsplitter/core':
         specifier: workspace:*
         version: link:../core
+      '@mistsplitter/policy':
+        specifier: workspace:*
+        version: link:../policy
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       typescript:
         specifier: ^5.5.0
@@ -107,6 +116,9 @@ importers:
       '@mistsplitter/policy':
         specifier: workspace:*
         version: link:../policy
+      '@mistsplitter/workflow':
+        specifier: workspace:*
+        version: link:../workflow
       '@prisma/client':
         specifier: ^5.19.0
         version: 5.22.0(prisma@5.22.0)

@@ -16,6 +16,7 @@
     "@mistsplitter/audit": "workspace:*",
     "@mistsplitter/core": "workspace:*",
     "@mistsplitter/policy": "workspace:*",
+    "@mistsplitter/workflow": "workspace:*",
     "@prisma/client": "^5.19.0",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.5",

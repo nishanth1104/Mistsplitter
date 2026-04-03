@@ -28,3 +28,13 @@ export interface Actor {
   role: ActorRole
   agentId?: string // populated when type === 'agent'
 }
+
+/**
+ * Result returned by each agent executor function.
+ * Mirrors workflow/src/types.ts StepResult — duplicated here to avoid circular dependency.
+ */
+export interface StepResult {
+  success: boolean
+  error?: string
+  data?: unknown
+}

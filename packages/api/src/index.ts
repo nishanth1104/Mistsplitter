@@ -4,6 +4,9 @@ import { getConfig, logger, disconnectDb } from '@mistsplitter/core'
 import { authMiddleware } from './middleware/auth.js'
 import { errorHandler } from './middleware/error.js'
 import { healthRoutes } from './routes/health.js'
+import { caseRoutes } from './routes/cases.js'
+import { workflowRoutes } from './routes/workflow.js'
+import { reviewRoutes } from './routes/reviews.js'
 
 async function buildApp() {
   const config = getConfig()
@@ -46,6 +49,9 @@ async function buildApp() {
 
   // Routes
   await app.register(healthRoutes)
+  await app.register(caseRoutes, { prefix: '/cases' })
+  await app.register(workflowRoutes, { prefix: '/cases' })
+  await app.register(reviewRoutes, { prefix: '/cases' })
 
   return app
 }
