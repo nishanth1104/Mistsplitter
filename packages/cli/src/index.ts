@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
+import { showBanner } from './banner.js'
 import { registerCaseCommands } from './commands/case.js'
 import { registerReviewCommands } from './commands/review.js'
 import { registerAgentCommands } from './commands/agent.js'
@@ -15,6 +16,9 @@ program
   .description('Mistsplitter — Governed AI fintech operations platform')
   .version('0.0.1')
   .option('--json', 'Output as JSON')
+  .action(() => {
+    showBanner()
+  })
 
 registerCaseCommands(program)
 registerReviewCommands(program)
@@ -24,4 +28,4 @@ registerReplayCommands(program)
 registerServeCommands(program)
 registerSeedCommands(program)
 
-program.parse(process.argv)
+program.parseAsync(process.argv)

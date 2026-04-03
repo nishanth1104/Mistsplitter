@@ -23,11 +23,8 @@ function spawnService(label: string, pkg: string): void {
 }
 
 export function registerServeCommands(program: Command): void {
-  // Resolve repo root from this file's location (packages/cli/src/commands/serve.ts)
-  const repoRoot = resolve(
-    new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'),
-    '../../../../..',
-  )
+  // Resolve repo root from process.cwd() or __dirname fallback
+  const repoRoot = resolve(process.cwd())
 
   const serveCmd = program.command('serve').description('Start platform services')
 
