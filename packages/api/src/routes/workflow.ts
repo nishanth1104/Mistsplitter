@@ -1,7 +1,10 @@
 import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
 import { db, ids, logger } from '@mistsplitter/core'
 import { startWorkflowRun, executeWorkflow, RISK_REVIEW_STEPS, buildExecutors } from '@mistsplitter/workflow'
 import { requireRole } from '../middleware/auth.js'
+
+const CaseParamsSchema = z.object({ id: z.string().min(1) }).strict()
 
 export async function workflowRoutes(app: FastifyInstance): Promise<void> {
   // POST /cases/:id/run — start a workflow run for a case (async)
@@ -9,7 +12,11 @@ export async function workflowRoutes(app: FastifyInstance): Promise<void> {
     '/:id/run',
     { preHandler: requireRole('analyst') },
     async (request, reply) => {
-      const { id: caseId } = request.params as { id: string }
+      const parsedParams = CaseParamsSchema.safeParse(request.params)
+      if (!parsedParams.success) {
+        return reply.code(400).send({ error: 'Invalid path parameters', details: parsedParams.error.flatten() })
+      }
+      const { id: caseId } = parsedParams.data
       const correlationId =
         (request.headers['x-correlation-id'] as string | undefined) ?? `req_${Date.now()}`
 
@@ -53,7 +60,11 @@ export async function workflowRoutes(app: FastifyInstance): Promise<void> {
     '/:id/runs',
     { preHandler: requireRole('analyst') },
     async (request, reply) => {
-      const { id: caseId } = request.params as { id: string }
+      const parsedParams = CaseParamsSchema.safeParse(request.params)
+      if (!parsedParams.success) {
+        return reply.code(400).send({ error: 'Invalid path parameters', details: parsedParams.error.flatten() })
+      }
+      const { id: caseId } = parsedParams.data
 
       const runs = await db.workflowRun.findMany({
         where: { caseId },

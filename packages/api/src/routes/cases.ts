@@ -1,6 +1,16 @@
 import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
 import { db } from '@mistsplitter/core'
 import { requireRole } from '../middleware/auth.js'
+
+const CasesQuerySchema = z.object({
+  status: z.string().optional(),
+  priority: z.string().optional(),
+  limit: z.string().optional(),
+  offset: z.string().optional(),
+}).strict()
+
+const CaseParamsSchema = z.object({ id: z.string().min(1) }).strict()
 
 export async function caseRoutes(app: FastifyInstance): Promise<void> {
   // GET /cases — list cases with optional status/priority filter
@@ -8,7 +18,11 @@ export async function caseRoutes(app: FastifyInstance): Promise<void> {
     '/',
     { preHandler: requireRole('analyst') },
     async (request, reply) => {
-      const query = request.query as { status?: string; priority?: string; limit?: string; offset?: string }
+      const parsed = CasesQuerySchema.safeParse(request.query)
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid query parameters', details: parsed.error.flatten() })
+      }
+      const query = parsed.data
       const limit = Math.min(parseInt(query.limit ?? '50', 10), 200)
       const offset = parseInt(query.offset ?? '0', 10)
 
@@ -40,7 +54,11 @@ export async function caseRoutes(app: FastifyInstance): Promise<void> {
     '/:id',
     { preHandler: requireRole('analyst') },
     async (request, reply) => {
-      const { id } = request.params as { id: string }
+      const parsedParams = CaseParamsSchema.safeParse(request.params)
+      if (!parsedParams.success) {
+        return reply.code(400).send({ error: 'Invalid path parameters', details: parsedParams.error.flatten() })
+      }
+      const { id } = parsedParams.data
 
       const caseRecord = await db.case.findUnique({
         where: { caseId: id },
