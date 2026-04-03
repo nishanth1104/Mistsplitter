@@ -7,6 +7,9 @@ import { healthRoutes } from './routes/health.js'
 import { caseRoutes } from './routes/cases.js'
 import { workflowRoutes } from './routes/workflow.js'
 import { reviewRoutes } from './routes/reviews.js'
+import { agentRoutes } from './routes/agents.js'
+import { metricsRoutes } from './routes/metrics.js'
+import { auditLogRoutes } from './routes/audit-logs.js'
 
 async function buildApp() {
   const config = getConfig()
@@ -52,6 +55,9 @@ async function buildApp() {
   await app.register(caseRoutes, { prefix: '/cases' })
   await app.register(workflowRoutes, { prefix: '/cases' })
   await app.register(reviewRoutes, { prefix: '/cases' })
+  await app.register(agentRoutes, { prefix: '/agents' })
+  await app.register(metricsRoutes, { prefix: '/metrics' })
+  await app.register(auditLogRoutes, { prefix: '/audit-logs' })
 
   return app
 }
