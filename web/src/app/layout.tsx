@@ -5,6 +5,14 @@ import { Nav } from '@/components/Nav'
 export const metadata: Metadata = {
   title: 'Mistsplitter — Fintech Operations',
   description: 'Governed AI orchestration platform for fintech operations',
+  icons: {
+    icon: '/favicon.png',
+  },
+  openGraph: {
+    title: 'Mistsplitter',
+    description: 'Governed AI orchestration platform for fintech operations',
+    images: [{ url: '/favicon.png' }],
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
