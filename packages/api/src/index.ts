@@ -76,10 +76,20 @@ process.on('SIGINT', async () => {
   process.exit(0)
 })
 
-main().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error('Fatal startup error:', err)
-  process.exit(1)
-})
+// Only run main() when this file is the direct entry point, not when imported by tests
+const isMain =
+  process.argv[1] !== undefined &&
+  (process.argv[1].endsWith('/index.js') ||
+    process.argv[1].endsWith('\\index.js') ||
+    process.argv[1].endsWith('/index.ts') ||
+    process.argv[1].endsWith('\\index.ts'))
+
+if (isMain) {
+  main().catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error('Fatal startup error:', err)
+    process.exit(1)
+  })
+}
 
 export { buildApp }

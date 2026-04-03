@@ -56,14 +56,14 @@ describe('AgentRegistry', () => {
   })
 
   describe('checkToolPermission() — approved tools', () => {
-    it('permits IntakeAgent to call create_case', async () => {
+    it('permits IntakeAgent to call get_alert', async () => {
       const { db } = await import('@mistsplitter/core')
       ;(db.agentRegistry.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(
         makeAgentRecord('IntakeAgent'),
       )
       const result = await registry.checkToolPermission(
         makeActor('agent_IntakeAgent'),
-        'create_case',
+        'get_alert',
       )
       expect(result.ok).toBe(true)
     })
@@ -94,14 +94,14 @@ describe('AgentRegistry', () => {
   })
 
   describe('checkToolPermission() — blocked tools', () => {
-    it('blocks IntakeAgent from calling get_customer_profile', async () => {
+    it('blocks IntakeAgent from calling compute_rule_hits', async () => {
       const { db } = await import('@mistsplitter/core')
       ;(db.agentRegistry.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(
         makeAgentRecord('IntakeAgent'),
       )
       const result = await registry.checkToolPermission(
         makeActor('agent_IntakeAgent'),
-        'get_customer_profile',
+        'compute_rule_hits',
       )
       expect(result.ok).toBe(false)
       if (!result.ok) {
@@ -161,7 +161,7 @@ describe('AgentRegistry', () => {
       )
       const result = await registry.checkToolPermission(
         makeActor('agent_IntakeAgent'),
-        'create_case',
+        'get_alert',
       )
       expect(result.ok).toBe(false)
       if (!result.ok) expect(result.error.code).toBe('AGENT_SUSPENDED')
@@ -174,7 +174,7 @@ describe('AgentRegistry', () => {
       )
       const result = await registry.checkToolPermission(
         makeActor('agent_IntakeAgent'),
-        'create_case',
+        'get_alert',
       )
       expect(result.ok).toBe(false)
       if (!result.ok) expect(result.error.code).toBe('AGENT_REVOKED')
@@ -195,7 +195,7 @@ describe('AgentRegistry', () => {
       ;(db.agentRegistry.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null)
       const result = await registry.checkToolPermission(
         makeActor('agent_unknown'),
-        'create_case',
+        'get_alert',
       )
       expect(result.ok).toBe(false)
       if (!result.ok) expect(result.error.code).toBe('AGENT_NOT_FOUND')
@@ -224,10 +224,10 @@ describe('AgentRegistry', () => {
       expect(AGENT_PROFILES['SummaryAgent']?.approvedTools).toEqual(['draft_case_summary'])
     })
 
-    it('IntakeAgent cannot call retrieval tools', () => {
+    it('IntakeAgent cannot call compute or action tools', () => {
       const tools = AGENT_PROFILES['IntakeAgent']?.approvedTools ?? []
-      expect(tools).not.toContain('get_customer_profile')
-      expect(tools).not.toContain('get_recent_transactions')
+      expect(tools).not.toContain('compute_rule_hits')
+      expect(tools).not.toContain('submit_review')
     })
   })
 })

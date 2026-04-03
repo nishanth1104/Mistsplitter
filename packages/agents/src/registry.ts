@@ -18,7 +18,7 @@ export const AGENT_PROFILES: Record<string, Omit<AgentProfile, 'agentId'>> = {
   IntakeAgent: {
     name: 'IntakeAgent',
     role: 'intake',
-    approvedTools: ['create_case', 'validate_alert'] as const,
+    approvedTools: ['get_alert', 'get_case', 'get_customer_profile'] as const,
     allowedActions: ['case.create'] as const,
   },
   RetrievalAgent: {
@@ -62,9 +62,9 @@ export const AGENT_PROFILES: Record<string, Omit<AgentProfile, 'agentId'>> = {
     name: 'ReviewLoggerAgent',
     role: 'review_logging',
     approvedTools: [
-      'submit_review_record',
-      'write_audit_event',
-      'update_metrics',
+      'submit_review',
+      'request_escalation',
+      'get_case_audit',
     ] as const,
     allowedActions: ['review.persist', 'metrics.update', 'audit.write'] as const,
   },
