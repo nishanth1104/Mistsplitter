@@ -98,9 +98,15 @@ importers:
 
   packages/cli:
     dependencies:
+      '@mistsplitter/audit':
+        specifier: workspace:*
+        version: link:../audit
       '@mistsplitter/core':
         specifier: workspace:*
         version: link:../core
+      '@mistsplitter/policy':
+        specifier: workspace:*
+        version: link:../policy
       chalk:
         specifier: ^5.3.0
         version: 5.6.2
