@@ -6,7 +6,7 @@ import { requireRole } from '../middleware/auth.js'
 const MetricsQuerySchema = z.object({}).strict()
 
 export async function metricsRoutes(app: FastifyInstance): Promise<void> {
-  // GET /metrics — latest snapshot value per metric_name
+  // GET /metrics — latest snapshot value per metric_name (JSON format for web dashboard)
   app.get(
     '/',
     { preHandler: requireRole('analyst') },

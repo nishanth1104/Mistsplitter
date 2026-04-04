@@ -192,7 +192,7 @@ async function run(): Promise<void> {
     intake_complete:   '  ▸ RetrievalAgent   → fetching customer, account, transaction history',
     retrieval_complete:'  ▸ SignalAgent       → computing 7 risk signals',
     signals_computed:  '  ▸ EvidenceAgent    → assembling evidence bundle',
-    evidence_assembled:'  ▸ SummaryAgent     → generating narrative (Claude Haiku)',
+    evidence_assembled:'  ▸ SummaryAgent     → generating narrative (GPT-4o-mini)',
     summary_generated: '  ▸ PolicyAgent      → evaluating workflow gate',
     policy_permitted:  '  ✓ Pipeline complete → awaiting human review',
     awaiting_review:   '  ✓ Pipeline complete → awaiting human review',
@@ -218,7 +218,7 @@ async function run(): Promise<void> {
       lastState = run.state
     }
 
-    if (run.status === 'success' || run.status === 'failed' || run.state === 'awaiting_review') {
+    if (run.status === 'completed' || run.status === 'failed' || run.state === 'awaiting_review') {
       break
     }
   }

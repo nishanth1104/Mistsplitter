@@ -18,7 +18,9 @@ export function ReviewForm({ caseId }: { caseId: string }) {
   const [success, setSuccess] = useState(false)
 
   const needsReasonCode = action === 'overridden'
-  const canSubmit = !submitting && (!needsReasonCode || reasonCode.trim().length > 0)
+  const [escalationConfirmed, setEscalationConfirmed] = useState(false)
+  const needsEscalationConfirm = action === 'escalated' && !escalationConfirmed
+  const canSubmit = !submitting && (!needsReasonCode || reasonCode.trim().length > 0) && !needsEscalationConfirm
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,7 +77,7 @@ export function ReviewForm({ caseId }: { caseId: string }) {
             <button
               key={a}
               type="button"
-              onClick={() => { setAction(a); setError(null) }}
+              onClick={() => { setAction(a); setError(null); setEscalationConfirmed(false) }}
               className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
                 action === a
                   ? a === 'approved'
@@ -140,6 +142,22 @@ export function ReviewForm({ caseId }: { caseId: string }) {
 
       {needsReasonCode && !reasonCode.trim() && (
         <p className="text-red-400 text-xs">Reason code is required for override.</p>
+      )}
+
+      {/* Escalation confirmation — destructive action warning */}
+      {action === 'escalated' && !escalationConfirmed && (
+        <div className="bg-orange-900/30 border border-orange-700 rounded p-3">
+          <p className="text-orange-300 text-xs mb-2">
+            Escalation triggers a senior review and may have regulatory implications. Confirm to proceed.
+          </p>
+          <button
+            type="button"
+            onClick={() => setEscalationConfirmed(true)}
+            className="px-4 py-1.5 bg-orange-700 hover:bg-orange-600 text-white text-xs font-medium rounded transition-colors"
+          >
+            Confirm Escalation
+          </button>
+        </div>
       )}
     </form>
   )

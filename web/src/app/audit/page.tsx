@@ -89,8 +89,16 @@ export default async function AuditPage({
                     <span className="text-[#462C55]">—</span>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-[#462C55] text-xs font-mono max-w-xs truncate">
-                  {JSON.stringify(log.payloadJson).slice(0, 80)}
+                <td className="px-4 py-2.5 text-[#462C55] text-xs font-mono max-w-xs">
+                  <details>
+                    <summary className="cursor-pointer hover:text-[#A977BF] truncate max-w-xs">
+                      {JSON.stringify(log.payloadJson).slice(0, 80)}
+                      {JSON.stringify(log.payloadJson).length > 80 ? '…' : ''}
+                    </summary>
+                    <pre className="mt-2 whitespace-pre-wrap break-all text-[#704786] bg-[#110918] rounded p-2 text-xs max-w-md overflow-auto max-h-48">
+                      {JSON.stringify(log.payloadJson, null, 2)}
+                    </pre>
+                  </details>
                 </td>
               </tr>
             ))}

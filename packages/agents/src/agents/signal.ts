@@ -3,7 +3,7 @@
  * Runs in the `computing_signals` workflow state.
  */
 
-import { db, ids } from '@mistsplitter/core'
+import { db, ids, getConfig } from '@mistsplitter/core'
 import { writeAuditEvent, AuditActions } from '@mistsplitter/audit'
 import type { StepResult } from '../types.js'
 
@@ -63,15 +63,21 @@ export async function runSignalAgent(caseId: string, runId: string): Promise<Ste
     const priorAlertsPayload = priorAlertsEvidence?.payloadJson as { count?: number } | null
     const priorAlertsCount = priorAlertsPayload?.count ?? 0
 
+    const config = getConfig()
+    const HIGH_AMOUNT_THRESHOLD = config.HIGH_AMOUNT_THRESHOLD
+    const RAPID_SUCCESSION_COUNT = config.RAPID_SUCCESSION_COUNT
+    const RAPID_SUCCESSION_HOURS = config.RAPID_SUCCESSION_HOURS
+    const AMOUNT_DEVIATION_MULTIPLIER = config.AMOUNT_DEVIATION_MULTIPLIER
+
     const signals: Signal[] = []
     const txnAmount = parseFloat(String(txn.amount))
 
     // Signal 1: High amount
-    if (txnAmount > 10000) {
+    if (txnAmount > HIGH_AMOUNT_THRESHOLD) {
       signals.push({
         signalName: 'high_amount',
         signalValue: String(txnAmount),
-        signalReason: `Transaction amount ${txnAmount} exceeds threshold of 10,000`,
+        signalReason: `Transaction amount ${txnAmount} exceeds threshold of ${HIGH_AMOUNT_THRESHOLD}`,
       })
     }
 
@@ -84,16 +90,17 @@ export async function runSignalAgent(caseId: string, runId: string): Promise<Ste
       })
     }
 
-    // Signal 3: Rapid succession (>3 transactions in 24h)
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    // Signal 3: Rapid succession
+    const windowMs = RAPID_SUCCESSION_HOURS * 60 * 60 * 1000
+    const windowStart = new Date(Date.now() - windowMs)
     const recentCount = recentTxns.filter(
-      (t) => new Date(t.timestamp) > oneDayAgo,
+      (t) => new Date(t.timestamp) > windowStart,
     ).length
-    if (recentCount > 3) {
+    if (recentCount > RAPID_SUCCESSION_COUNT) {
       signals.push({
         signalName: 'rapid_succession',
         signalValue: String(recentCount),
-        signalReason: `${recentCount} transactions in last 24 hours (threshold: 3)`,
+        signalReason: `${recentCount} transactions in last ${RAPID_SUCCESSION_HOURS} hours (threshold: ${RAPID_SUCCESSION_COUNT})`,
       })
     }
 
@@ -121,7 +128,7 @@ export async function runSignalAgent(caseId: string, runId: string): Promise<Ste
       if (amounts.length > 0) {
         const avg = amounts.reduce((s, a) => s + a, 0) / amounts.length
         const deviation = avg > 0 ? Math.abs(txnAmount - avg) / avg : 0
-        if (deviation > 2) {
+        if (deviation > AMOUNT_DEVIATION_MULTIPLIER) {
           signals.push({
             signalName: 'amount_deviation',
             signalValue: deviation.toFixed(2),

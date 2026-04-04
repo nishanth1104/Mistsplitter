@@ -34,17 +34,19 @@ vi.mock('@mistsplitter/core', async (importOriginal) => {
       recommendation: vi.fn().mockReturnValue('rec_abc'),
     },
     logger: { info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
-    getConfig: vi.fn().mockReturnValue({ ANTHROPIC_API_KEY: 'sk-test' }),
+    getConfig: vi.fn().mockReturnValue({ OPENAI_API_KEY: 'sk-test' }),
     LLMValidationError: actual.LLMValidationError,
   }
 })
 
-const mockAnthropicCreate = vi.fn()
-vi.mock('@anthropic-ai/sdk', () => {
+const mockOpenAICreate = vi.fn()
+vi.mock('openai', () => {
   return {
     default: vi.fn().mockImplementation(() => ({
-      messages: {
-        create: mockAnthropicCreate,
+      chat: {
+        completions: {
+          create: mockOpenAICreate,
+        },
       },
     })),
   }
@@ -137,7 +139,7 @@ const BASE_CASE = {
 describe('compute_rule_hits', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockAnthropicCreate.mockReset()
+    mockOpenAICreate.mockReset()
   })
 
   it('does NOT fire HIGH_AMOUNT rule for amount < 10000', async () => {
@@ -290,15 +292,15 @@ describe('draft_case_summary', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockAnthropicCreate.mockReset()
+    mockOpenAICreate.mockReset()
   })
 
   it('returns recommendation on valid LLM output', async () => {
     const { db } = await import('@mistsplitter/core')
     ;(db.caseEvidence.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(EVIDENCE_RECORD)
     ;(db.recommendation.create as ReturnType<typeof vi.fn>).mockResolvedValue({})
-    mockAnthropicCreate.mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify(VALID_LLM_RESPONSE) }],
+    mockOpenAICreate.mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify(VALID_LLM_RESPONSE) } }],
     })
     const result = await handleDraftCaseSummary(
       { actor: makeActor(), case_id: 'case_1', evidence_id: 'evidence_1' },
@@ -312,8 +314,8 @@ describe('draft_case_summary', () => {
   it('returns error and writes SUMMARY_GENERATION_FAILED when LLM output fails Zod validation', async () => {
     const { db } = await import('@mistsplitter/core')
     ;(db.caseEvidence.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(EVIDENCE_RECORD)
-    mockAnthropicCreate.mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({ recommended_action: 'invalid_value' }) }],
+    mockOpenAICreate.mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({ recommended_action: 'invalid_value' }) } }],
     })
     const result = await handleDraftCaseSummary(
       { actor: makeActor(), case_id: 'case_1', evidence_id: 'evidence_1' },
@@ -328,8 +330,8 @@ describe('draft_case_summary', () => {
   it('returns error and writes SUMMARY_GENERATION_FAILED when LLM output is not JSON', async () => {
     const { db } = await import('@mistsplitter/core')
     ;(db.caseEvidence.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(EVIDENCE_RECORD)
-    mockAnthropicCreate.mockResolvedValue({
-      content: [{ type: 'text', text: 'not json at all' }],
+    mockOpenAICreate.mockResolvedValue({
+      choices: [{ message: { content: 'not json at all' } }],
     })
     const result = await handleDraftCaseSummary(
       { actor: makeActor(), case_id: 'case_1', evidence_id: 'evidence_1' },
@@ -354,7 +356,7 @@ describe('draft_case_summary', () => {
   it('returns error on LLM API failure', async () => {
     const { db } = await import('@mistsplitter/core')
     ;(db.caseEvidence.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(EVIDENCE_RECORD)
-    mockAnthropicCreate.mockRejectedValue(new Error('API error'))
+    mockOpenAICreate.mockRejectedValue(new Error('API error'))
     const result = await handleDraftCaseSummary(
       { actor: makeActor(), case_id: 'case_1', evidence_id: 'evidence_1' },
       makeRegistry() as never,
@@ -380,7 +382,7 @@ describe('check_policy', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockAnthropicCreate.mockReset()
+    mockOpenAICreate.mockReset()
   })
 
   it('delegates to evaluatePolicy and returns decision', async () => {

@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { logger, type ActorRole } from '@mistsplitter/core'
 import { PermissionDeniedError } from '@mistsplitter/core'
+import { writeAuditEvent } from '@mistsplitter/audit'
 
 // Role hierarchy — higher index = more permissions
 const ROLE_HIERARCHY: ActorRole[] = [
@@ -36,8 +37,11 @@ export async function authMiddleware(
   reply: FastifyReply,
 ): Promise<void> {
   const authHeader = request.headers['authorization']
+  const ip = request.ip
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    logger.warn({ ip, url: request.url }, 'Auth failed — missing or invalid authorization header')
+    await writeAuthFailedEvent(request, 'missing_header')
     await reply.status(401).send({
       error: 'Missing or invalid authorization header',
       code: 'UNAUTHORIZED',
@@ -49,6 +53,8 @@ export async function authMiddleware(
   const parts = token.split(':')
 
   if (parts.length < 3) {
+    logger.warn({ ip, url: request.url }, 'Auth failed — invalid token format')
+    await writeAuthFailedEvent(request, 'invalid_token_format')
     await reply.status(401).send({
       error: 'Invalid token format',
       code: 'UNAUTHORIZED',
@@ -60,6 +66,8 @@ export async function authMiddleware(
   const name = nameParts.join(':')
 
   if (!isValidRole(role)) {
+    logger.warn({ ip, url: request.url, attemptedRole: role }, 'Auth failed — invalid role')
+    await writeAuthFailedEvent(request, `invalid_role:${role}`)
     await reply.status(401).send({
       error: `Invalid role: ${role}`,
       code: 'UNAUTHORIZED',
@@ -84,7 +92,7 @@ export function requireRole(minimumRole: ActorRole) {
 
     if (!hasMinimumRole(user.role, minimumRole)) {
       logger.warn(
-        { userId: user.id, userRole: user.role, requiredRole: minimumRole },
+        { userId: user.id, userRole: user.role, requiredRole: minimumRole, url: request.url },
         'Access denied — insufficient role',
       )
       await reply.status(403).send({
@@ -107,4 +115,26 @@ function hasMinimumRole(userRole: ActorRole, requiredRole: ActorRole): boolean {
   const userIndex = ROLE_HIERARCHY.indexOf(userRole)
   const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole)
   return userIndex >= requiredIndex
+}
+
+/**
+ * Write an auth.failed audit event — no token/credential content, only metadata.
+ */
+async function writeAuthFailedEvent(request: FastifyRequest, reason: string): Promise<void> {
+  try {
+    await writeAuditEvent({
+      actorType: 'api',
+      actorId: request.ip,
+      actorRole: 'analyst', // lowest role — unknown at this point
+      action: 'auth.failed',
+      payload: {
+        reason,
+        url: request.url,
+        method: request.method,
+        ip: request.ip,
+      },
+    })
+  } catch {
+    // Never let audit logging break the auth response
+  }
 }

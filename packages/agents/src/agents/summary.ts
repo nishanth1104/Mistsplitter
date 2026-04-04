@@ -6,7 +6,7 @@
  * LLM output is validated with Zod before writing to the recommendations table.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { db, ids, getConfig } from '@mistsplitter/core'
 import { writeAuditEvent, AuditActions } from '@mistsplitter/audit'
 import type { StepResult } from '../types.js'
@@ -55,18 +55,56 @@ export async function runSummaryAgent(caseId: string, runId: string): Promise<St
       correlationId,
     })
 
-    // Call LLM — claude-haiku for speed
+    // Validate key at call time (config validates at startup, this is a safety net)
     const config = getConfig()
-    const client = new Anthropic({ apiKey: config.ANTHROPIC_API_KEY })
+    if (!config.OPENAI_API_KEY) {
+      return { success: false, error: 'OPENAI_API_KEY is not configured' }
+    }
 
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [{ role: 'user', content: prompt }],
-    })
+    // Call LLM — gpt-4o-mini for speed and cost efficiency
+    const client = new OpenAI({ apiKey: config.OPENAI_API_KEY })
 
-    const rawText =
-      response.content[0]?.type === 'text' ? response.content[0].text : ''
+    let rawText: string
+    let lastError: unknown
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await client.chat.completions.create(
+          {
+            model: 'gpt-4o-mini',
+            max_tokens: 512,
+            messages: [{ role: 'user', content: prompt }],
+          },
+          { signal: AbortSignal.timeout(30_000) },
+        )
+        rawText = response.choices[0]?.message?.content ?? ''
+        lastError = undefined
+        break
+      } catch (e) {
+        lastError = e
+        const status = (e as { status?: number }).status
+        if (attempt < 2 && (status === 503 || status === 529)) {
+          await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt))
+          continue
+        }
+        break
+      }
+    }
+
+    if (lastError !== undefined) {
+      const message = lastError instanceof Error ? lastError.message : String(lastError)
+      await writeAuditEvent({
+        caseId,
+        actorType: 'agent',
+        actorId: 'SummaryAgent',
+        actorRole: 'workflow-agent',
+        action: AuditActions.SUMMARY_GENERATION_FAILED,
+        payload: { step: 'summary', runId, error: `LLM call failed: ${message}` },
+        correlationId,
+      })
+      return { success: false, error: `LLM call failed: ${message}` }
+    }
+
+    rawText = rawText!
 
     // Parse JSON from LLM response
     let parsed: unknown

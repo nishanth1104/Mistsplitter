@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 const REQUIRED_VALID = {
   DATABASE_URL: 'postgresql://localhost/test',
-  ANTHROPIC_API_KEY: 'sk-ant-test-key',
+  OPENAI_API_KEY: 'sk-proj-test-key',
   JWT_SECRET: 'a-very-long-secret-that-is-at-least-32-characters-long',
 }
 
@@ -25,7 +25,7 @@ function saveEnv(keys: string[]): Record<string, string | undefined> {
 }
 
 describe('config loader', () => {
-  const keys = ['DATABASE_URL', 'ANTHROPIC_API_KEY', 'PORT', 'MCP_PORT', 'NODE_ENV', 'JWT_SECRET']
+  const keys = ['DATABASE_URL', 'OPENAI_API_KEY', 'PORT', 'MCP_PORT', 'NODE_ENV', 'JWT_SECRET']
   let saved: Record<string, string | undefined>
 
   beforeEach(async () => {
@@ -48,8 +48,8 @@ describe('config loader', () => {
     expect(() => getConfig()).toThrow('Invalid configuration')
   })
 
-  it('throws when ANTHROPIC_API_KEY is missing', async () => {
-    setEnv({ ...REQUIRED_VALID, ANTHROPIC_API_KEY: undefined })
+  it('throws when OPENAI_API_KEY is missing', async () => {
+    setEnv({ ...REQUIRED_VALID, OPENAI_API_KEY: undefined })
     const { getConfig, resetConfig } = await import('../config.js')
     resetConfig()
     expect(() => getConfig()).toThrow('Invalid configuration')
@@ -80,5 +80,15 @@ describe('config loader', () => {
     const a = getConfig()
     const b = getConfig()
     expect(a).toBe(b)
+  })
+
+  it('loads signal threshold defaults', async () => {
+    setEnv({ ...REQUIRED_VALID, NODE_ENV: 'test' })
+    const { getConfig, resetConfig } = await import('../config.js')
+    resetConfig()
+    const config = getConfig()
+    expect(config.HIGH_AMOUNT_THRESHOLD).toBe(10000)
+    expect(config.RAPID_SUCCESSION_COUNT).toBe(3)
+    expect(config.AMOUNT_DEVIATION_MULTIPLIER).toBe(2)
   })
 })

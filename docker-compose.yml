@@ -6,12 +6,20 @@ services:
     container_name: mistsplitter-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: mistsplitter
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -24,14 +32,26 @@ services:
       dockerfile: packages/api/Dockerfile
     container_name: mistsplitter-api
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mistsplitter
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mistsplitter
       PORT: 3000
-      NODE_ENV: development
+      NODE_ENV: ${NODE_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars}
     ports:
       - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     profiles:
       - full
 
@@ -41,14 +61,49 @@ services:
       dockerfile: packages/mcp/Dockerfile
     container_name: mistsplitter-mcp
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mistsplitter
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mistsplitter
       MCP_PORT: 3001
-      NODE_ENV: development
+      NODE_ENV: ${NODE_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars}
     ports:
       - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: '0.25'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - full
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+    container_name: mistsplitter-web
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3000}
+    ports:
+      - "3002:3002"
+    depends_on:
+      - api
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     profiles:
       - full
 

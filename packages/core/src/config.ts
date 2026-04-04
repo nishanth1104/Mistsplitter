@@ -5,8 +5,15 @@ const ConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'demo', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   MCP_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
-  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
+  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').default('dev-secret-change-in-production-min-32-chars'),
+  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+  RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(100),
+  // Signal thresholds — configurable without code deploy
+  HIGH_AMOUNT_THRESHOLD: z.coerce.number().default(10000),
+  RAPID_SUCCESSION_COUNT: z.coerce.number().int().default(3),
+  RAPID_SUCCESSION_HOURS: z.coerce.number().default(24),
+  AMOUNT_DEVIATION_MULTIPLIER: z.coerce.number().default(2),
 })
 
 export type Config = z.infer<typeof ConfigSchema>

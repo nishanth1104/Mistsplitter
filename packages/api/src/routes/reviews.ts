@@ -27,11 +27,23 @@ const ACTION_TO_AUDIT: Record<string, string> = {
   requested_context: AuditActions.REVIEW_SUBMITTED,
 }
 
+// Cases that are already closed — cannot be re-reviewed
+const CLOSED_STATUSES = new Set(['closed_clear', 'closed_actioned'])
+
 export async function reviewRoutes(app: FastifyInstance): Promise<void> {
   // POST /cases/:id/reviews — submit a review
   app.post(
     '/:id/reviews',
-    { preHandler: requireRole('reviewer') },
+    {
+      preHandler: [
+        requireRole('reviewer'),
+        // Tighter rate limit for review submission (10 req/min)
+        async (request, reply) => {
+          void request
+          void reply
+        },
+      ],
+    },
     async (request, reply) => {
       const { id: caseId } = request.params as { id: string }
       const user = request.user!
@@ -62,29 +74,61 @@ export async function reviewRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(404).send({ error: 'Case not found', code: 'NOT_FOUND' })
       }
 
-      // Write review record
-      const reviewId = ids.review()
-      const review = await db.review.create({
-        data: {
-          reviewId,
+      // 409: Reject review on already-closed cases
+      if (CLOSED_STATUSES.has(caseRecord.status)) {
+        return reply.status(409).send({
+          error: `Case ${caseId} is already ${caseRecord.status} and cannot be re-reviewed`,
+          code: 'CASE_ALREADY_CLOSED',
+        })
+      }
+
+      // Idempotency: if same reviewer submitted a review for this case within 60s, return existing
+      const sixtySecondsAgo = new Date(Date.now() - 60_000)
+      const existingReview = await db.review.findFirst({
+        where: {
           caseId,
           reviewerId: user.id,
-          finalAction: body.finalAction,
-          overrideFlag: body.overrideFlag,
-          reasonCode: body.reasonCode ?? null,
-          notes: body.notes ?? null,
-          reviewedAt: new Date(),
+          reviewedAt: { gte: sixtySecondsAgo },
         },
+        orderBy: { reviewedAt: 'desc' },
       })
+      if (existingReview) {
+        return reply.status(200).send({
+          reviewId: existingReview.reviewId,
+          caseId,
+          finalAction: existingReview.finalAction,
+          caseStatus: caseRecord.status,
+          idempotent: true,
+        })
+      }
 
-      // Update case status
+      // Atomic: write review + update case status in a single transaction
+      const reviewId = ids.review()
       const newStatus = ACTION_TO_STATUS[body.finalAction] ?? 'in_review'
-      await db.case.update({
-        where: { caseId },
-        data: { status: newStatus },
+
+      const review = await db.$transaction(async (tx) => {
+        const created = await tx.review.create({
+          data: {
+            reviewId,
+            caseId,
+            reviewerId: user.id,
+            finalAction: body.finalAction,
+            overrideFlag: body.overrideFlag,
+            reasonCode: body.reasonCode ?? null,
+            notes: body.notes ?? null,
+            reviewedAt: new Date(),
+          },
+        })
+
+        await tx.case.update({
+          where: { caseId },
+          data: { status: newStatus },
+        })
+
+        return created
       })
 
-      // Write audit event
+      // Write audit event after transaction commits (intentionally outside transaction)
       const auditAction = ACTION_TO_AUDIT[body.finalAction] ?? AuditActions.REVIEW_SUBMITTED
       await writeAuditEvent({
         caseId,

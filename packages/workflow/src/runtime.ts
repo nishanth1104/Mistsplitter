@@ -136,7 +136,8 @@ export async function executeWorkflow(
         data: {
           state: finalState,
           status,
-          ...(status === 'completed' ? { endedAt: new Date() } : {}),
+          // Set endedAt for terminal state OR when paused at human review gate
+          ...(status === 'completed' || requiresHumanAction(finalState) ? { endedAt: new Date() } : {}),
         },
       })
     } catch (cause) {

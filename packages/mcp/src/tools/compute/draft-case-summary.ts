@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { db, ids, logger, getConfig, LLMValidationError } from '@mistsplitter/core'
 import { writeAuditEvent, AuditActions } from '@mistsplitter/audit'
 import type { AgentRegistry } from '@mistsplitter/agents'
@@ -106,18 +106,21 @@ Respond with ONLY valid JSON matching this schema:
 
   let rawContent: string
   try {
-    const anthropic = new Anthropic({ apiKey: getConfig().ANTHROPIC_API_KEY })
-    const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    })
+    const openai = new OpenAI({ apiKey: getConfig().OPENAI_API_KEY })
+    const message = await openai.chat.completions.create(
+      {
+        model: 'gpt-4o-mini',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      },
+      { signal: AbortSignal.timeout(30_000) },
+    )
 
-    const firstBlock = message.content[0]
-    if (!firstBlock || firstBlock.type !== 'text') {
+    const text = message.choices[0]?.message?.content
+    if (!text) {
       throw new LLMValidationError('No text content in LLM response')
     }
-    rawContent = firstBlock.text
+    rawContent = text
   } catch (cause) {
     logger.error({ err: cause, caseId: case_id }, 'LLM call failed in draft_case_summary')
     await writeAuditEvent({

@@ -4,8 +4,8 @@ import { db } from '@mistsplitter/core'
 import { requireRole } from '../middleware/auth.js'
 
 const CasesQuerySchema = z.object({
-  status: z.string().optional(),
-  priority: z.string().optional(),
+  status: z.enum(['pending', 'in_review', 'escalated', 'closed_clear', 'closed_actioned']).optional(),
+  priority: z.enum(['critical', 'high', 'medium', 'low']).optional(),
   limit: z.string().optional(),
   offset: z.string().optional(),
 }).strict()

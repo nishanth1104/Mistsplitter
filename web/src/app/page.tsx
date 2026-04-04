@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api'
-import type { MetricsResponse, CaseListResponse, CaseStatus } from '@/lib/types'
+import type { MetricsResponse, CaseListResponse, AgentListResponse, CaseStatus } from '@/lib/types'
 
 const METRIC_LABELS: Record<string, string> = {
   queue_backlog:           'Queue Backlog',
@@ -33,9 +33,10 @@ const STATUS_LABELS: Record<CaseStatus, string> = {
 }
 
 export default async function DashboardPage() {
-  const [metricsData, casesData] = await Promise.all([
+  const [metricsData, casesData, agentData] = await Promise.all([
     apiFetch<MetricsResponse>('/metrics').catch(() => ({ metrics: [] })),
     apiFetch<CaseListResponse>('/cases?limit=200').catch(() => ({ cases: [], total: 0, limit: 200, offset: 0 })),
+    apiFetch<AgentListResponse>('/agents').catch(() => ({ agents: [], total: 0 })),
   ])
 
   // Status breakdown
@@ -104,7 +105,7 @@ export default async function DashboardPage() {
           { href: '/cases', label: 'Review Queue', sub: `${statusCounts['pending'] ?? 0} pending` },
           { href: '/cases?status=escalated', label: 'Escalated', sub: `${statusCounts['escalated'] ?? 0} cases` },
           { href: '/audit', label: 'Audit Trail', sub: 'All events' },
-          { href: '/agents', label: 'Agents', sub: '7 registered' },
+          { href: '/agents', label: 'Agents', sub: `${agentData.total} registered` },
         ].map((link) => (
           <a
             key={link.href}

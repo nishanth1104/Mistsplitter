@@ -97,6 +97,50 @@ describe('GET /cases', () => {
     })
     expect(res.statusCode).toBe(200)
   })
+
+  it('returns 400 for invalid status value', async () => {
+    const app = await buildTestApp()
+    const res = await app.inject({
+      method: 'GET',
+      url: '/cases?status=invalid_status',
+      headers: { authorization: ANALYST },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = JSON.parse(res.body) as { error: string }
+    expect(body.error).toBe('Invalid query parameters')
+  })
+
+  it('returns 400 for invalid priority value', async () => {
+    const app = await buildTestApp()
+    const res = await app.inject({
+      method: 'GET',
+      url: '/cases?priority=super_urgent',
+      headers: { authorization: ANALYST },
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('accepts all valid status enum values', async () => {
+    const app = await buildTestApp()
+    const validStatuses = ['pending', 'in_review', 'escalated', 'closed_clear', 'closed_actioned']
+    for (const status of validStatuses) {
+      const res = await app.inject({
+        method: 'GET', url: `/cases?status=${status}`, headers: { authorization: ANALYST },
+      })
+      expect(res.statusCode).toBe(200)
+    }
+  })
+
+  it('accepts all valid priority enum values', async () => {
+    const app = await buildTestApp()
+    const validPriorities = ['critical', 'high', 'medium', 'low']
+    for (const priority of validPriorities) {
+      const res = await app.inject({
+        method: 'GET', url: `/cases?priority=${priority}`, headers: { authorization: ANALYST },
+      })
+      expect(res.statusCode).toBe(200)
+    }
+  })
 })
 
 describe('GET /cases/:id', () => {
