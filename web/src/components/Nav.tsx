@@ -4,7 +4,8 @@ const NAV_ITEMS = [
   { href: '/',        label: 'Dashboard',  icon: '▦' },
   { href: '/cases',   label: 'Cases',      icon: '⊞' },
   { href: '/audit',   label: 'Audit',      icon: '≡' },
-  { href: '/agents',  label: 'Agents',     icon: '◈' },
+  { href: '/agents',           label: 'Agents',    icon: '◈' },
+  { href: '/agent-workspace', label: 'Workspace', icon: '⬡' },
 ]
 
 export function Nav() {
