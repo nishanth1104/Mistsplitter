@@ -7,8 +7,8 @@ import { ReviewForm } from './ReviewForm'
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#1a0f22] border border-[#462C55] rounded-lg p-5 mb-4">
-      <h2 className="text-[#704786] text-xs font-semibold uppercase tracking-widest mb-4">{title}</h2>
+    <div className="bg-card border border-border rounded-lg p-5 mb-4">
+      <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-widest mb-4">{title}</h2>
       {children}
     </div>
   )
@@ -16,30 +16,33 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex gap-4 py-1.5 border-b border-[#2d1440] last:border-0">
-      <span className="text-[#704786] text-xs w-40 flex-shrink-0 pt-0.5">{label}</span>
-      <span className="text-[#E3C4E9] text-sm flex-1">{value ?? <span className="text-[#462C55]">—</span>}</span>
+    <div className="flex gap-4 py-1.5 border-b border-border/40 last:border-0">
+      <span className="text-muted-foreground text-xs w-40 flex-shrink-0 pt-0.5">{label}</span>
+      <span className="text-foreground text-sm flex-1">{value ?? <span className="text-muted-foreground/40">—</span>}</span>
     </div>
   )
 }
 
-function ActionColor({ action }: { action: string }) {
-  const cls =
-    action === 'clear' ? 'text-green-400'
-    : action === 'escalate' ? 'text-red-400'
-    : 'text-yellow-400'
-  return <span className={`font-semibold ${cls}`}>{action}</span>
+function actionColor(action: string): string {
+  if (action.startsWith('agent.'))    return 'text-purple-400'
+  if (action.startsWith('workflow.')) return 'text-blue-400'
+  if (action.startsWith('review.'))   return 'text-emerald-400'
+  if (action.startsWith('policy.'))   return 'text-orange-400'
+  if (action.startsWith('summary.'))  return 'text-cyan-400'
+  return 'text-muted-foreground'
 }
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const [caseData, auditData] = await Promise.all([
     apiFetch<CaseDetail>(`/cases/${params.id}`).catch(() => null),
-    apiFetch<AuditLogResponse>(`/audit-logs?caseId=${params.id}&limit=50`).catch(() => ({ logs: [], total: 0, limit: 50, offset: 0 })),
+    apiFetch<AuditLogResponse>(`/audit-logs?caseId=${params.id}&limit=50`).catch(() => ({
+      logs: [], total: 0, limit: 50, offset: 0,
+    })),
   ])
 
   if (!caseData) notFound()
 
-  const c = caseData.case
+  const c   = caseData.case
   const rec = c.recommendations[0]
   const rev = c.reviews[0]
   const run = c.workflowRuns[0]
@@ -50,10 +53,10 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <a href="/cases" className="text-[#704786] text-xs hover:text-[#A977BF] mb-2 inline-block">
+          <a href="/cases" className="text-muted-foreground text-xs hover:text-cyan-400 mb-2 inline-block transition-colors">
             ← Cases
           </a>
-          <h1 className="text-xl font-bold text-[#E3C4E9] font-mono">{c.caseId}</h1>
+          <h1 className="text-xl font-bold text-foreground font-mono">{c.caseId}</h1>
         </div>
         <div className="flex gap-2">
           <StatusBadge status={c.status} />
@@ -61,99 +64,109 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      {/* Case Info */}
       <Panel title="Case">
-        <Field label="Case ID" value={<span className="font-mono text-xs">{c.caseId}</span>} />
+        <Field label="Case ID"        value={<span className="font-mono text-xs">{c.caseId}</span>} />
         <Field label="Correlation ID" value={<span className="font-mono text-xs">{c.correlationId}</span>} />
-        <Field label="Assigned To" value={c.assignedTo} />
-        <Field label="Created" value={new Date(c.createdAt).toLocaleString()} />
-        <Field label="Updated" value={new Date(c.updatedAt).toLocaleString()} />
+        <Field label="Assigned To"    value={c.assignedTo} />
+        <Field label="Created"        value={new Date(c.createdAt).toLocaleString()} />
+        <Field label="Updated"        value={new Date(c.updatedAt).toLocaleString()} />
       </Panel>
 
-      {/* Alert */}
       <Panel title="Alert">
-        <Field label="Alert ID" value={<span className="font-mono text-xs">{c.alert.alertId}</span>} />
-        <Field label="Type" value={c.alert.alertType} />
-        <Field label="Severity" value={c.alert.severity} />
+        <Field label="Alert ID"   value={<span className="font-mono text-xs">{c.alert.alertId}</span>} />
+        <Field label="Type"       value={c.alert.alertType} />
+        <Field label="Severity"   value={c.alert.severity} />
         {txn && (
           <>
-            <Field label="Amount" value={`${txn.amount} ${txn.currency}`} />
-            <Field label="Channel" value={txn.channel} />
+            <Field label="Amount"     value={<span className="font-mono">{txn.amount} {txn.currency}</span>} />
+            <Field label="Channel"    value={txn.channel} />
             <Field label="Txn Status" value={txn.status} />
-            <Field label="Timestamp" value={new Date(txn.timestamp).toLocaleString()} />
+            <Field label="Timestamp"  value={new Date(txn.timestamp).toLocaleString()} />
           </>
         )}
       </Panel>
 
-      {/* Workflow */}
       <Panel title="Workflow">
         {run ? (
           <>
-            <Field label="Run ID" value={<span className="font-mono text-xs">{run.runId}</span>} />
-            <Field label="State" value={<span className="text-[#A977BF] font-medium">{run.state}</span>} />
-            <Field label="Status" value={run.status} />
+            <Field label="Run ID"  value={<span className="font-mono text-xs">{run.runId}</span>} />
+            <Field label="State"   value={<span className="text-cyan-400 font-medium font-mono">{run.state}</span>} />
+            <Field label="Status"  value={run.status} />
             <Field label="Started" value={new Date(run.startedAt).toLocaleString()} />
             {run.endedAt && <Field label="Ended" value={new Date(run.endedAt).toLocaleString()} />}
           </>
         ) : (
-          <p className="text-[#462C55] text-sm">No workflow run yet.</p>
+          <p className="text-muted-foreground text-sm">No workflow run yet.</p>
         )}
       </Panel>
 
-      {/* Recommendation */}
-      <Panel title="Recommendation">
+      {/* ── Recommendation — hero panel ── */}
+      <div className="bg-card border-2 border-cyan-500/40 rounded-lg p-5 mb-4 shadow-[0_0_24px_0_rgba(6,182,212,0.07)]">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-cyan-400 text-xs font-semibold uppercase tracking-widest">Recommendation</h2>
+          {rec && (
+            <span className={`text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded border ${
+              rec.recommendedAction === 'clear'
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                : rec.recommendedAction === 'escalate'
+                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+                  : 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+            }`}>
+              {rec.recommendedAction}
+            </span>
+          )}
+        </div>
         {rec ? (
           <>
-            <Field label="Action" value={<ActionColor action={rec.recommendedAction} />} />
-            <Field label="Confidence" value={rec.confidence} />
-            <Field label="Generated" value={new Date(rec.createdAt).toLocaleString()} />
-            <div className="mt-3 p-3 bg-[#110918] rounded border border-[#2d1440]">
-              <div className="text-[#704786] text-xs mb-1 uppercase tracking-wide">Summary</div>
-              <p className="text-[#E3C4E9] text-sm leading-relaxed">{rec.summary}</p>
+            <Field label="Confidence" value={<span className="font-mono">{rec.confidence}</span>} />
+            <Field label="Generated"  value={new Date(rec.createdAt).toLocaleString()} />
+            <div className="mt-4 p-4 bg-background rounded-lg border border-border">
+              <div className="text-muted-foreground text-xs mb-2 uppercase tracking-wide font-medium">AI Summary</div>
+              <p className="text-foreground text-sm leading-relaxed">{rec.summary}</p>
             </div>
             {rec.evidenceReferences.length > 0 && (
               <div className="mt-3">
-                <div className="text-[#704786] text-xs mb-1 uppercase tracking-wide">Evidence References</div>
+                <div className="text-muted-foreground text-xs mb-2 uppercase tracking-wide font-medium">Evidence</div>
                 <div className="flex flex-wrap gap-2">
                   {rec.evidenceReferences.map((r) => (
-                    <span key={r} className="px-2 py-0.5 bg-[#2d1440] text-[#A977BF] text-xs rounded">{r}</span>
+                    <span key={r} className="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 text-xs rounded border border-cyan-500/30 font-mono">
+                      {r}
+                    </span>
                   ))}
                 </div>
               </div>
             )}
           </>
         ) : (
-          <p className="text-[#462C55] text-sm">No recommendation yet. Run the workflow first.</p>
+          <p className="text-muted-foreground text-sm">No recommendation yet. Run the workflow first.</p>
         )}
-      </Panel>
+      </div>
 
-      {/* Review */}
       <Panel title="Latest Review">
         {rev ? (
           <>
-            <Field label="Reviewer" value={rev.reviewerId} />
-            <Field label="Action" value={<span className="font-medium">{rev.finalAction}</span>} />
-            <Field label="Override" value={rev.overrideFlag ? 'Yes' : 'No'} />
+            <Field label="Reviewer"    value={rev.reviewerId} />
+            <Field label="Action"      value={<span className="font-medium">{rev.finalAction}</span>} />
+            <Field label="Override"    value={rev.overrideFlag ? 'Yes' : 'No'} />
             <Field label="Reason Code" value={rev.reasonCode} />
-            <Field label="Notes" value={rev.notes} />
+            <Field label="Notes"       value={rev.notes} />
             <Field label="Reviewed At" value={new Date(rev.reviewedAt).toLocaleString()} />
           </>
         ) : (
-          <p className="text-[#462C55] text-sm">No review submitted yet.</p>
+          <p className="text-muted-foreground text-sm">No review submitted yet.</p>
         )}
       </Panel>
 
-      {/* Audit Trail */}
       <Panel title={`Audit Trail (${auditData.total} events)`}>
         {auditData.logs.length === 0 ? (
-          <p className="text-[#462C55] text-sm">No audit events.</p>
+          <p className="text-muted-foreground text-sm">No audit events.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-[#2d1440]">
+                <tr className="border-b border-border">
                   {['Time', 'Actor', 'Role', 'Action'].map((h) => (
-                    <th key={h} className="text-left px-2 py-2 text-[#704786] font-medium uppercase tracking-wide">
+                    <th key={h} className="text-left px-2 py-2 text-muted-foreground font-medium uppercase tracking-wide">
                       {h}
                     </th>
                   ))}
@@ -161,13 +174,13 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
               </thead>
               <tbody>
                 {[...auditData.logs].reverse().map((log) => (
-                  <tr key={log.logId} className="border-b border-[#1a0f22] hover:bg-[#1a0f22]">
-                    <td className="px-2 py-2 text-[#704786] font-mono whitespace-nowrap">
+                  <tr key={log.logId} className="border-b border-border/40 hover:bg-accent/30">
+                    <td className="px-2 py-2 text-muted-foreground font-mono whitespace-nowrap">
                       {new Date(log.createdAt).toLocaleTimeString()}
                     </td>
-                    <td className="px-2 py-2 text-[#A977BF]">{log.actorId}</td>
-                    <td className="px-2 py-2 text-[#462C55]">{log.actorRole}</td>
-                    <td className="px-2 py-2 text-[#E3C4E9]">{log.action}</td>
+                    <td className="px-2 py-2 text-foreground">{log.actorId}</td>
+                    <td className="px-2 py-2 text-muted-foreground/60">{log.actorRole}</td>
+                    <td className={`px-2 py-2 font-mono ${actionColor(log.action)}`}>{log.action}</td>
                   </tr>
                 ))}
               </tbody>
@@ -176,7 +189,6 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         )}
       </Panel>
 
-      {/* Review Form */}
       {!['closed_clear', 'closed_actioned'].includes(c.status) && (
         <Panel title="Submit Review">
           <ReviewForm caseId={c.caseId} />

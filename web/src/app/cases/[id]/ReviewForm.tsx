@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DEV_AUTH } from '@/lib/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
 
@@ -10,30 +13,26 @@ type ReviewAction = 'approved' | 'overridden' | 'escalated'
 
 export function ReviewForm({ caseId }: { caseId: string }) {
   const router = useRouter()
-  const [action, setAction] = useState<ReviewAction>('approved')
-  const [reasonCode, setReasonCode] = useState('')
-  const [notes, setNotes] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-
-  const needsReasonCode = action === 'overridden'
+  const [action, setAction]                     = useState<ReviewAction>('approved')
+  const [reasonCode, setReasonCode]             = useState('')
+  const [notes, setNotes]                       = useState('')
+  const [submitting, setSubmitting]             = useState(false)
+  const [error, setError]                       = useState<string | null>(null)
+  const [success, setSuccess]                   = useState(false)
   const [escalationConfirmed, setEscalationConfirmed] = useState(false)
+
+  const needsReasonCode       = action === 'overridden'
   const needsEscalationConfirm = action === 'escalated' && !escalationConfirmed
-  const canSubmit = !submitting && (!needsReasonCode || reasonCode.trim().length > 0) && !needsEscalationConfirm
+  const canSubmit             = !submitting && (!needsReasonCode || reasonCode.trim().length > 0) && !needsEscalationConfirm
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-
     try {
       const res = await fetch(`${API_BASE}/cases/${caseId}/reviews`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: DEV_AUTH,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: DEV_AUTH },
         body: JSON.stringify({
           finalAction: action,
           overrideFlag: action === 'overridden',
@@ -41,13 +40,11 @@ export function ReviewForm({ caseId }: { caseId: string }) {
           ...(notes.trim() ? { notes: notes.trim() } : {}),
         }),
       })
-
       if (!res.ok) {
         const body = (await res.json()) as { error?: string }
         setError(body.error ?? `Error ${res.status}`)
         return
       }
-
       setSuccess(true)
       router.refresh()
     } catch (err) {
@@ -59,7 +56,7 @@ export function ReviewForm({ caseId }: { caseId: string }) {
 
   if (success) {
     return (
-      <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 text-green-300 text-sm">
+      <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-lg p-4 text-emerald-400 text-sm">
         Review submitted successfully. Page will refresh automatically.
       </div>
     )
@@ -69,94 +66,93 @@ export function ReviewForm({ caseId }: { caseId: string }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Action selector */}
       <div>
-        <label className="block text-[#A977BF] text-xs font-medium mb-2 uppercase tracking-wide">
+        <label className="block text-muted-foreground text-xs font-medium mb-2 uppercase tracking-wide">
           Review Action
         </label>
         <div className="flex gap-2">
           {(['approved', 'overridden', 'escalated'] as ReviewAction[]).map((a) => (
-            <button
+            <Button
               key={a}
               type="button"
+              variant={action === a ? 'default' : 'outline'}
+              size="sm"
               onClick={() => { setAction(a); setError(null); setEscalationConfirmed(false) }}
-              className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                action === a
-                  ? a === 'approved'
-                    ? 'bg-green-700 text-white'
-                    : a === 'escalated'
-                      ? 'bg-orange-700 text-white'
-                      : 'bg-red-800 text-white'
-                  : 'bg-[#1a0f22] text-[#A977BF] border border-[#462C55] hover:border-[#704786]'
-              }`}
+              className={action === a ? (
+                a === 'approved'  ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-0' :
+                a === 'escalated' ? 'bg-orange-600  hover:bg-orange-700  text-white border-0' :
+                                    'bg-rose-700    hover:bg-rose-800    text-white border-0'
+              ) : ''}
             >
               {a.charAt(0).toUpperCase() + a.slice(1)}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
-      {/* Reason code (required for override) */}
+      {/* Reason code */}
       {needsReasonCode && (
         <div>
-          <label className="block text-[#A977BF] text-xs font-medium mb-2 uppercase tracking-wide">
-            Reason Code <span className="text-red-400">*</span>
+          <label className="block text-muted-foreground text-xs font-medium mb-2 uppercase tracking-wide">
+            Reason Code <span className="text-rose-400">*</span>
           </label>
-          <input
+          <Input
             type="text"
             value={reasonCode}
             onChange={(e) => setReasonCode(e.target.value)}
             placeholder="e.g. KNOWN_CUSTOMER_PATTERN"
-            className="w-full bg-[#110918] border border-[#462C55] rounded px-3 py-2 text-[#E3C4E9] text-sm focus:outline-none focus:border-[#704786] placeholder-[#462C55]"
+            className="font-mono"
           />
         </div>
       )}
 
       {/* Notes */}
       <div>
-        <label className="block text-[#A977BF] text-xs font-medium mb-2 uppercase tracking-wide">
+        <label className="block text-muted-foreground text-xs font-medium mb-2 uppercase tracking-wide">
           Notes (optional)
         </label>
-        <textarea
+        <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           placeholder="Additional context or rationale..."
-          className="w-full bg-[#110918] border border-[#462C55] rounded px-3 py-2 text-[#E3C4E9] text-sm focus:outline-none focus:border-[#704786] placeholder-[#462C55] resize-none"
+          className="resize-none"
         />
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded px-3 py-2 text-red-300 text-sm">
+        <div className="bg-rose-500/10 border border-rose-500/40 rounded px-3 py-2 text-rose-400 text-sm">
           {error}
         </div>
       )}
 
       {/* Submit */}
-      <button
+      <Button
         type="submit"
         disabled={!canSubmit}
-        className="px-6 py-2 bg-[#704786] hover:bg-[#8D5FA5] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors"
+        className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold disabled:opacity-40"
       >
         {submitting ? 'Submitting…' : 'Submit Review'}
-      </button>
+      </Button>
 
       {needsReasonCode && !reasonCode.trim() && (
-        <p className="text-red-400 text-xs">Reason code is required for override.</p>
+        <p className="text-rose-400 text-xs">Reason code is required for override.</p>
       )}
 
-      {/* Escalation confirmation — destructive action warning */}
+      {/* Escalation confirm */}
       {action === 'escalated' && !escalationConfirmed && (
-        <div className="bg-orange-900/30 border border-orange-700 rounded p-3">
+        <div className="bg-orange-500/10 border border-orange-500/40 rounded-lg p-3">
           <p className="text-orange-300 text-xs mb-2">
             Escalation triggers a senior review and may have regulatory implications. Confirm to proceed.
           </p>
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={() => setEscalationConfirmed(true)}
-            className="px-4 py-1.5 bg-orange-700 hover:bg-orange-600 text-white text-xs font-medium rounded transition-colors"
+            className="bg-orange-600 hover:bg-orange-700 text-white border-0"
           >
             Confirm Escalation
-          </button>
+          </Button>
         </div>
       )}
     </form>

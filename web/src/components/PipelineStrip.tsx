@@ -20,68 +20,82 @@ export function PipelineStrip({ agents, activeIndex }: PipelineStripProps) {
   return (
     <div
       style={{
-        background: '#0d0815',
-        border: '1px solid #2d1440',
-        borderRadius: '12px',
-        padding: '20px 24px',
+        background: '#0d0920',
+        border: '1px solid #3b0f6e',
+        borderRadius: '14px',
+        padding: '20px 28px',
         marginBottom: '24px',
       }}
     >
-      <div style={{ color: '#704786', fontSize: '9px', letterSpacing: '0.12em', marginBottom: '16px' }}>
+      <style>{`
+        @keyframes node-ring {
+          0%,100% { box-shadow: 0 0 0 0 rgba(232,121,249,0.7); }
+          50%      { box-shadow: 0 0 0 10px rgba(232,121,249,0); }
+        }
+        @keyframes connector-flow {
+          0%   { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+      `}</style>
+
+      <div style={{ color: '#c084fc', fontSize: '9px', letterSpacing: '0.14em', marginBottom: '18px', fontWeight: 700 }}>
         AGENT PIPELINE
       </div>
+
       <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
         {agents.map((agent, i) => {
           const isActive = i === activeIndex
-          const isDone = agent.cardState === 'done'
+          const isDone   = agent.cardState === 'done'
           const isFailed = agent.cardState === 'failed'
 
           const nodeColor =
-            isFailed  ? '#ef4444'
-            : isDone  ? '#22c55e'
-            : isActive ? '#A977BF'
-            : '#2d1440'
+            isFailed  ? '#f87171'
+            : isDone  ? '#4ade80'
+            : isActive ? '#e879f9'
+            : '#2d1060'
 
           const nodeBg =
-            isFailed  ? 'rgba(239,68,68,0.15)'
-            : isDone  ? 'rgba(34,197,94,0.15)'
-            : isActive ? 'rgba(169,119,191,0.2)'
-            : '#150c1e'
+            isFailed  ? 'rgba(248,113,113,0.18)'
+            : isDone  ? 'rgba(74,222,128,0.18)'
+            : isActive ? 'rgba(232,121,249,0.22)'
+            : '#100830'
 
           const nodeTextColor =
-            isFailed  ? '#ef4444'
-            : isDone  ? '#22c55e'
-            : isActive ? '#E3C4E9'
-            : '#462C55'
+            isFailed  ? '#f87171'
+            : isDone  ? '#4ade80'
+            : isActive ? '#f0e6ff'
+            : '#4a2070'
 
-          // Connector after this node (skip last)
-          const connectorActive = isActive
-          const connectorDone = isDone && i < activeIndex
+          const connectorFilled = isDone || (i < activeIndex)
 
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < agents.length - 1 ? 'none' : 'none' }}>
+            <div
+              key={i}
+              style={{ display: 'flex', alignItems: 'center', flex: i < agents.length - 1 ? 1 : 'none' }}
+            >
               {/* Step node */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px' }}>
                 <div
                   style={{
-                    width: '40px',
-                    height: '40px',
+                    width: '44px',
+                    height: '44px',
                     borderRadius: '50%',
                     border: `2px solid ${nodeColor}`,
                     background: nodeBg,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    animation: isActive ? 'step-ring 1.5s ease-in-out infinite' : 'none',
-                    transition: 'border-color 0.4s ease, background 0.4s ease',
+                    animation: isActive ? 'node-ring 1.4s ease-in-out infinite' : 'none',
+                    transition: 'border-color 0.3s ease, background 0.3s ease',
+                    flexShrink: 0,
                   }}
                 >
                   {isDone ? (
-                    <span style={{ color: '#22c55e', fontSize: '14px' }}>✓</span>
+                    <span style={{ color: '#4ade80', fontSize: '15px' }}>✓</span>
                   ) : isFailed ? (
-                    <span style={{ color: '#ef4444', fontSize: '14px' }}>✗</span>
+                    <span style={{ color: '#f87171', fontSize: '15px' }}>✗</span>
                   ) : (
-                    <span style={{ color: nodeTextColor, fontSize: '11px', fontWeight: 700 }}>
+                    <span style={{ color: nodeTextColor, fontSize: '11px', fontWeight: 800 }}>
                       {i + 1}
                     </span>
                   )}
@@ -92,30 +106,31 @@ export function PipelineStrip({ agents, activeIndex }: PipelineStripProps) {
                     fontSize: '9px',
                     letterSpacing: '0.06em',
                     whiteSpace: 'nowrap',
-                    transition: 'color 0.4s ease',
+                    fontWeight: isActive ? 700 : 400,
+                    transition: 'color 0.3s ease',
                   }}
                 >
                   {STEP_LABELS[i]}
                 </span>
               </div>
 
-              {/* Connector line between nodes */}
+              {/* Connector */}
               {i < agents.length - 1 && (
                 <div
                   style={{
                     flex: 1,
-                    minWidth: '24px',
-                    height: '2px',
-                    marginBottom: '16px',
-                    background: connectorActive
-                      ? 'linear-gradient(90deg, #462C55, #8D5FA5, #A977BF, #8D5FA5, #462C55)'
-                      : connectorDone
-                      ? '#22c55e'
-                      : '#2d1440',
-                    backgroundSize: connectorActive ? '200% 100%' : '100% 100%',
-                    animation: connectorActive ? 'pipeline-flow 2s linear infinite' : 'none',
+                    minWidth: '20px',
+                    height: '3px',
+                    marginBottom: '18px',
+                    borderRadius: '2px',
+                    background: isActive
+                      ? 'linear-gradient(90deg, #7c3aed, #e879f9, #c084fc, #e879f9, #7c3aed)'
+                      : connectorFilled
+                      ? '#4ade80'
+                      : '#1e0f3a',
+                    backgroundSize: isActive ? '200% 100%' : '100% 100%',
+                    animation: isActive ? 'connector-flow 1.8s linear infinite' : 'none',
                     transition: 'background 0.4s ease',
-                    borderRadius: '1px',
                   }}
                 />
               )}

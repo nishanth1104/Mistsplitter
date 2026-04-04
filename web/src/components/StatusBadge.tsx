@@ -1,26 +1,19 @@
+import { Badge } from '@/components/ui/badge'
 import type { CaseStatus } from '@/lib/types'
 
-const STATUS_STYLES: Record<CaseStatus, string> = {
-  pending:          'bg-gray-700 text-gray-200 ring-gray-500',
-  in_review:        'bg-blue-900 text-blue-200 ring-blue-500',
-  escalated:        'bg-orange-900 text-orange-200 ring-orange-500',
-  closed_clear:     'bg-green-900 text-green-200 ring-green-500',
-  closed_actioned:  'bg-red-900 text-red-200 ring-red-500',
-}
-
-const STATUS_LABELS: Record<CaseStatus, string> = {
-  pending:         'Pending',
-  in_review:       'In Review',
-  escalated:       'Escalated',
-  closed_clear:    'Closed · Clear',
-  closed_actioned: 'Closed · Actioned',
+const STATUS_CONFIG: Record<CaseStatus, { label: string; className: string }> = {
+  pending:         { label: 'Pending',          className: 'bg-slate-500/20 text-slate-300 border-slate-500/40 hover:bg-slate-500/20' },
+  in_review:       { label: 'In Review',        className: 'bg-blue-500/20  text-blue-300  border-blue-500/40  hover:bg-blue-500/20'  },
+  escalated:       { label: 'Escalated',        className: 'bg-orange-500/20 text-orange-300 border-orange-500/40 hover:bg-orange-500/20' },
+  closed_clear:    { label: 'Closed · Clear',   className: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/20' },
+  closed_actioned: { label: 'Closed · Actioned',className: 'bg-rose-500/20  text-rose-300   border-rose-500/40  hover:bg-rose-500/20'  },
 }
 
 export function StatusBadge({ status }: { status: CaseStatus }) {
-  const cls = STATUS_STYLES[status] ?? 'bg-gray-700 text-gray-200 ring-gray-500'
+  const { label, className } = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ring-1 ring-inset ${cls}`}>
-      {STATUS_LABELS[status] ?? status}
-    </span>
+    <Badge variant="outline" className={className}>
+      {label}
+    </Badge>
   )
 }
