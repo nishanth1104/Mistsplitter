@@ -18,7 +18,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:studio": "pnpm --filter @mistsplitter/core exec prisma studio",
     "db:reset": "pnpm --filter @mistsplitter/core exec prisma migrate reset --force",
-    "cli": "pnpm --filter @mistsplitter/cli exec tsx src/index.ts",
+    "cli": "pnpm --filter @mistsplitter/cli run start",
     "serve:api": "pnpm --filter @mistsplitter/api dev",
     "serve:mcp": "pnpm --filter @mistsplitter/mcp dev",
     "serve:all": "pnpm --parallel serve:api serve:mcp",
