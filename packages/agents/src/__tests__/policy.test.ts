@@ -11,6 +11,7 @@ vi.mock('@mistsplitter/core', async (importOriginal) => {
     db: {
       case: { findUnique: vi.fn() },
       recommendation: { findFirst: vi.fn() },
+      agentRegistry: { findFirst: vi.fn().mockResolvedValue({ agentId: 'agent_policy_test' }) },
     },
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   }
