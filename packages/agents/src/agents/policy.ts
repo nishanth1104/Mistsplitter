@@ -20,9 +20,12 @@ export async function runPolicyAgent(caseId: string, runId: string): Promise<Ste
       orderBy: { createdAt: 'desc' },
     })
 
+    const agentRecord = await db.agentRegistry.findFirst({ where: { name: 'PolicyAgent' } })
+    const agentId = agentRecord?.agentId ?? 'PolicyAgent'
+
     const policyContext = {
       caseId,
-      agentId: 'PolicyAgent',
+      agentId,
       workflowName: 'risk_review',
       caseStatus: caseRecord.status as 'pending' | 'in_review' | 'escalated' | 'closed_clear' | 'closed_actioned',
       casePriority: caseRecord.priority as 'low' | 'medium' | 'high' | 'critical',

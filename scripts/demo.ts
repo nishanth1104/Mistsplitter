@@ -52,9 +52,11 @@ const API_BASE = process.env['API_URL'] ?? 'http://localhost:3000'
 const AUTH = 'Bearer reviewer:demo-user-1:Demo User'
 
 async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = { Authorization: AUTH }
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
   const res = await fetch(`${API_BASE}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json', Authorization: AUTH },
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
   if (!res.ok) {
@@ -188,14 +190,13 @@ async function run(): Promise<void> {
   console.log()
 
   const stateLabels: Record<string, string> = {
-    intake_started:    '  ▸ IntakeAgent      → validating alert, creating case',
-    intake_complete:   '  ▸ RetrievalAgent   → fetching customer, account, transaction history',
-    retrieval_complete:'  ▸ SignalAgent       → computing 7 risk signals',
-    signals_computed:  '  ▸ EvidenceAgent    → assembling evidence bundle',
-    evidence_assembled:'  ▸ SummaryAgent     → generating narrative (GPT-4o-mini)',
-    summary_generated: '  ▸ PolicyAgent      → evaluating workflow gate',
-    policy_permitted:  '  ✓ Pipeline complete → awaiting human review',
-    awaiting_review:   '  ✓ Pipeline complete → awaiting human review',
+    intake:              '  ▸ IntakeAgent      → validating alert, creating case',
+    retrieving:          '  ▸ RetrievalAgent   → fetching customer, account, transaction history',
+    computing_signals:   '  ▸ SignalAgent       → computing 7 risk signals',
+    assembling_evidence: '  ▸ EvidenceAgent    → assembling evidence bundle',
+    generating_summary:  '  ▸ SummaryAgent     → generating narrative (GPT-4o-mini)',
+    awaiting_policy:     '  ▸ PolicyAgent      → evaluating workflow gate',
+    awaiting_review:     '  ✓ Pipeline complete → awaiting human review',
   }
 
   let caseData: CaseDetail | null = null

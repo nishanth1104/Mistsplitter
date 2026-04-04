@@ -85,7 +85,7 @@ export async function runSignalAgent(caseId: string, runId: string): Promise<Ste
     if (customer?.riskTier === 'pep') {
       signals.push({
         signalName: 'pep_customer',
-        signalValue: 'true',
+        signalValue: '1',
         signalReason: `Customer ${customer.customerId} is classified as Politically Exposed Person`,
       })
     }
@@ -108,7 +108,7 @@ export async function runSignalAgent(caseId: string, runId: string): Promise<Ste
     if (merchant?.riskTag === 'restricted') {
       signals.push({
         signalName: 'unusual_merchant_category',
-        signalValue: merchant.riskTag,
+        signalValue: '1',
         signalReason: `Merchant ${merchant.merchantId} has restricted risk tag`,
       })
     }
@@ -142,7 +142,7 @@ export async function runSignalAgent(caseId: string, runId: string): Promise<Ste
     if (txn.currency !== 'USD') {
       signals.push({
         signalName: 'cross_border',
-        signalValue: txn.currency,
+        signalValue: '1',
         signalReason: `Transaction currency ${txn.currency} indicates potential cross-border activity`,
       })
     }

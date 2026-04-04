@@ -17,6 +17,22 @@ export async function executeStep(
   const maxRetries = step.maxRetries ?? 0
   let lastError: string | undefined
 
+  // Fire the state transition once before the first attempt
+  const startedEvent = step.event as RiskReviewEvent
+  let startedNextState: RiskReviewState
+  try {
+    startedNextState = transition(context.currentState, startedEvent)
+  } catch (e) {
+    return err({
+      code: 'INVALID_STATE_TRANSITION',
+      message: e instanceof Error ? e.message : String(e),
+      state: context.currentState,
+      event: startedEvent,
+    })
+  }
+  await updateWorkflowState(context.runId, startedNextState, 'running')
+  context.currentState = startedNextState
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     // Write agent.invoked audit event before execution
     await writeAuditEvent({
@@ -33,25 +49,6 @@ export async function executeStep(
       },
       correlationId: context.correlationId,
     })
-
-    // Determine the started event for this step
-    const startedEvent = step.event as RiskReviewEvent
-    let startedNextState: RiskReviewState
-
-    try {
-      startedNextState = transition(context.currentState, startedEvent)
-    } catch (e) {
-      return err({
-        code: 'INVALID_STATE_TRANSITION',
-        message: e instanceof Error ? e.message : String(e),
-        state: context.currentState,
-        event: startedEvent,
-      })
-    }
-
-    // Update workflow_runs with new state
-    await updateWorkflowState(context.runId, startedNextState, 'running')
-    context.currentState = startedNextState
 
     try {
       const result = await executor()
