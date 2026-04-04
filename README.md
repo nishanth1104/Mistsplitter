@@ -7,7 +7,7 @@
     <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat-square&logo=prisma&logoColor=white" alt="Prisma" />
     <img src="https://img.shields.io/badge/MCP-Native-7C3AED?style=flat-square" alt="MCP" />
     <img src="https://img.shields.io/badge/pnpm-Monorepo-F69220?style=flat-square&logo=pnpm&logoColor=white" alt="pnpm" />
-    <img src="https://img.shields.io/badge/Vitest-216_tests-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" />
+    <img src="https://img.shields.io/badge/Vitest-288_tests-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" />
   </p>
 </div>
 
@@ -244,13 +244,13 @@ Six roles with hierarchical access:
 | Runtime | Node.js 20+ |
 | API | Fastify with Zod validation on all boundaries |
 | Database | PostgreSQL via Prisma ORM |
-| AI Model | Configurable (currently Anthropic, OpenAI support planned) |
+| AI Model | OpenAI `gpt-4o-mini` — 30s timeout, 2-retry exponential backoff |
 | AI Protocol | Model Context Protocol (`@modelcontextprotocol/sdk`) |
 | CLI | Commander.js + chalk + ora |
 | Web | Next.js 14 App Router (Server + Client Components) |
 | Styling | Tailwind CSS |
 | Validation | Zod v4 on all external inputs |
-| Testing | Vitest — 216 tests across 21 suites |
+| Testing | Vitest — 288 tests across 30 suites |
 | Monorepo | pnpm workspaces |
 
 ---
@@ -261,8 +261,8 @@ Six roles with hierarchical access:
 
 - Node.js 20+
 - pnpm 9+ (`npm install -g pnpm`)
-- PostgreSQL 15+
-- AI API key (Anthropic or OpenAI — configurable)
+- Docker Desktop (for PostgreSQL)
+- OpenAI API key
 
 ### Setup
 
@@ -273,7 +273,10 @@ cd mistsplitter
 pnpm install
 
 cp .env.example .env
-# Set DATABASE_URL and ANTHROPIC_API_KEY in .env
+# Set OPENAI_API_KEY in .env
+
+# Start PostgreSQL
+docker-compose up postgres -d
 
 pnpm db:migrate      # apply Prisma migrations
 pnpm db:seed         # seed synthetic fintech data
@@ -292,7 +295,7 @@ pnpm --filter @mistsplitter/web dev   # → http://localhost:3002
 ### End-to-end demo
 
 ```bash
-pnpm demo            # runs the full workflow via API, prints colored output
+pnpm demo            # runs the full AI pipeline, prints colored output
 ```
 
 ---
@@ -340,8 +343,8 @@ Each workflow follows the same pattern: alert/trigger → agent pipeline → hum
 ## Testing
 
 ```bash
-pnpm test          # 216 tests — auth, agents, MCP permissions, workflow states, API routes, audit
-pnpm typecheck     # strict TypeScript across all 9 packages — zero errors
+pnpm test          # 288 tests across 30 suites — agents, workflow, API routes, MCP permissions, audit
+pnpm typecheck     # strict TypeScript across all 8 packages — zero errors
 ```
 
 ---
